@@ -1,0 +1,14 @@
+{
+    "labels": {
+        "options": {
+            "headers": {
+                "restart": "restart"
+            },
+            "controls": {
+                "keys": {
+                    "restart": "Restart"
+                }
+            }
+        }
+    }
+}
