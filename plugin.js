@@ -1,5 +1,6 @@
 const cp = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
 // file name to log spawned process output to, or null to disable logging
 const LOG_FILE = null;
@@ -20,20 +21,28 @@ export default class RestartButtonMod {
                 this.spawnDetached = false;
                 this.script = 'start';
                 this.scriptArgs = ['/B', `${scriptsDir.replace(/\//g, '\\')}windows.bat`];
+                this.scriptEnv = {};
                 break;
             case 'linux':
                 this.spawnInShell = false;
                 this.spawnDetached = true;
-                this.script = `${scriptsDir}linux.sh`;
-                this.scriptArgs = [];
+                this.script = `${scriptsDir}unix.sh`;
+                this.scriptArgs = []
+                this.scriptEnv = {
+                    __cc_restart_button_old_executable: process.execPath,
+                    __cc_restart_button_new_executable: process.execPath
+                };
                 break
             case 'darwin':
-                // I am still confused how this works without detaching,
-                // but I will leave it as is until this does not work for someone
                 this.spawnInShell = false;
-                this.spawnDetached = false;
-                this.script = `${scriptsDir}macos.sh`;
-                this.scriptArgs = [];
+                this.spawnDetached = true;
+                this.script = `${scriptsDir}unix.sh`;
+                this.scriptArgs = []
+                this.scriptEnv = {
+                    __cc_restart_button_old_executable: process.execPath,
+                    // on macOS process.execPath points to a binary inside of a helper application
+                    __cc_restart_button_new_executable: path.join(process.execPath, '../../../../../../MacOS/nwjs')
+                };
                 break;
             default:
                 throw new Error(`Restarting the process is not supported for '${process.platform}' systems yet.`);
@@ -79,7 +88,8 @@ export default class RestartButtonMod {
         const options = {
             shell: this.spawnInShell,
             stdio: 'ignore',
-            detached: this.spawnDetached
+            detached: this.spawnDetached,
+            env: { ...process.env, ...this.scriptEnv }
         };
         if(LOG_FILE) {
             const log = fs.openSync(LOG_FILE, 'w');
